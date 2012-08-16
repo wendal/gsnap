@@ -1,0 +1,20 @@
+介绍：
+1. gsnap.c是源文件，Android.mk用于打包。
+2. 使用NDK r7或以上编译即可
+
+用法:
+adb push libs/armeabi/gsnap /system/bin/
+adb shell
+> chmod 777 /system/bin/gsnap
+> gsnap 
+
+程序本身是一个守护进程,监听5678端口,可接受多种命令:
+snap     按当前参数进行截图, 响应格式:   前4个字节是jpeg数据的长度, 然后是jpeg数据
+info     获取当前framebuffer的信息
+qXXX     XXX代表图像资料, 例如 q80 代表质量为80%, 可选值1-100, 默认值80
+rX       X代表缩小的比例, 例如r2,代表缩小到1/2,   可选值大于1-80,默认值1(不缩放)
+kill     停止守护,程序退出
+
+任何命令均需要以\n结尾.
+
+后续会支持更多命令, 例如直接输出到文件
