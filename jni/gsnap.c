@@ -38,7 +38,7 @@
 #include <stdlib.h>
 #include <unistd.h>
 #include <string.h>
-#include <jpeglib.h>
+#include "jpeglib.h"
 #include <sys/mman.h>
 #include <sys/stat.h>
 #include <sys/types.h>
@@ -77,9 +77,7 @@ struct _FBInfo {
 #define fb_bpp(fb)    ((fb)->vi.bits_per_pixel>>3)
 #define fb_size(fb)   ((_width?_width:(fb)->vi.xres) * (fb)->vi.yres * fb_bpp(fb))
 
-void myprintf(char *a)
-{
-}
+#define myprintf(a)  ;
 
 static int fb_unpack_rgb565(FBInfo * fb, unsigned char *pixel, unsigned char *r, unsigned char *g, unsigned char *b)
 {
@@ -228,69 +226,6 @@ static int snap2jpg(char *outdata, int quality, int resize, FBInfo * fb, int *nS
 	return 0;
 }
 
-//Ref: http://blog.chinaunix.net/space.php?uid=15059847&do=blog&cuid=2040565
-static int snap2png(char *filename, int quality, int resize, FBInfo * fb)
-{
-
-	FILE *outfile;
-	if ((outfile = fopen(filename, "wb+")) == NULL) {
-		fprintf(stderr, "can't open %s\n", filename);
-		return -1;
-	}
-
-	/* prepare the standard PNG structures */
-	png_structp png_ptr = png_create_write_struct(PNG_LIBPNG_VER_STRING, 0, 0, 0);
-
-	png_infop info_ptr = png_create_info_struct(png_ptr);
-
-	/* setjmp() must be called in every function that calls a PNG-reading libpng function */
-	if (setjmp(png_jmpbuf(png_ptr))) {
-		png_destroy_write_struct(&png_ptr, &info_ptr);
-		fclose(outfile);
-		return -1;
-	}
-
-	/* initialize the png structure */
-	png_init_io(png_ptr, outfile);
-
-	//
-	int width = 0;
-	int height = 0;
-	int bit_depth = 8;
-	int color_type = PNG_COLOR_TYPE_RGB;
-	int interlace = 0;
-	width = fb_width(fb);
-	height = fb_height(fb);
-
-	png_set_IHDR(png_ptr, info_ptr, width, height, bit_depth, color_type,
-		     (!interlace) ? PNG_INTERLACE_NONE : PNG_INTERLACE_ADAM7, PNG_COMPRESSION_TYPE_BASE, PNG_FILTER_TYPE_BASE);
-
-	/* write the file header information */
-	png_write_info(png_ptr, info_ptr);
-
-	png_bytep row_pointers[height];
-	png_byte *image_buffer = malloc(3 * width);
-
-	int i = 0;
-	int j = 0;
-	unsigned char *line = NULL;
-	for (; i < height; i++) {
-		line = (char *)fb->bits + i * width * fb_bpp(fb);
-		for (j = 0; j < width; j++, line += fb_bpp(fb)) {
-			int offset = j * 3;
-			fb->unpack(fb, line, image_buffer + offset, image_buffer + offset + 1, image_buffer + offset + 2);
-		}
-		row_pointers[i] = image_buffer;
-		png_write_rows(png_ptr, &row_pointers[i], 1);
-	}
-
-	png_destroy_write_struct(&png_ptr, &info_ptr);
-
-	fclose(outfile);
-
-	return 0;
-
-}
 
 void adjustRGB(FBInfo * fb)
 {
@@ -356,9 +291,6 @@ ssize_t sendmsgcomplete(int sockd, const void *vptr, size_t n)
 	return n;
 }
 
-/*
- * 五和：虽然还不是很完美，但是，逻辑还是严密的
- */
 ssize_t senddata(int sockd, const void *vptr, size_t n)
 {
 	size_t ret;
@@ -375,7 +307,6 @@ ssize_t senddata(int sockd, const void *vptr, size_t n)
 	return ret;
 }
 
-/****************** 从socket读取数据 ********************/
 void read_socket()
 {
 	int recv_num, sent_num, recv_num_total = 0;
@@ -423,7 +354,6 @@ void read_socket()
 				//timeuse /= 1000000;
 				//printf("-----Time Use: %f -----\n", timeuse);
 
-				//printf("nSize: %d \n" , nSize);
 
 				if (senddata(newfd, outdata, nSize) < 0) {
 					printf("Send File is Failed\n");
@@ -492,8 +422,14 @@ int main(int argc, char *argv[])
 		exit(3);
 	}
 
-	_quality = atoi(argv[3]);
-	_reSize = atoi(argv[4]);
+        if (argc > 3)
+	    _quality = atoi(argv[3]);
+        else
+            _quality = 80;
+	if (argc > 4)
+            _reSize = atoi(argv[4]);
+        else
+            _reSize = 1;
 
 	if (argc > 6) {
 		_needAdjustRGB = 1;
