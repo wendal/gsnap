@@ -1,0 +1,35 @@
+gsnap用于在adb shell下进行屏幕截图。
+
+介绍：
+1. gsnap.c是源文件，Android.mk用于打包。
+
+2. 依赖jpeglib库，包含文件：
+    jconfig.h
+    jerror.h
+    jmorecfg.h
+    jpeglib.h
+    libjpeg.a
+
+3. 依赖libpng库，包含文件：
+    png.h
+    pngconf.h
+    pnglibconf.h
+    libpng.a
+
+4. 上面两个库，来源于官方下载：
+http://www.libpng.org/pub/png/libpng.html
+http://ijg.org/
+两个包下载解压后，执行命令：
+./configure --host=arm
+make
+sudo make install
+可以得到交叉编译以后的文件，分别在include文件夹和lib文件中，即使上面2，3中提到的.h和.a文件
+
+5. linux下cd到jni文件夹，然后执行$NDK/ndk-build，可以得到gsnap可执行文件
+注：$NDK的定义可以搜索Android Native Development Kit (NDK)
+
+6. usb连上真机，执行
+adb push gsnap /data/local/
+adb shell chmod 777 /data/local/gsnap
+adb shell /data/local/gsnap /sdcard/fb.jpg /dev/graphics/fb0
+可以看到截图生成在/sdcard/fb.jpg下。
